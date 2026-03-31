@@ -19,12 +19,13 @@ cache:
 
 stages:
     - prepare next development cycle
+    - test
     - deploy
     - release
 
 
 .gradle_template:
-    image: gradle:8.4-jdk21-jammy
+    image: gradle:9.4-jdk21-noble
     rules:
         # not in tags
         -   if: $CI_COMMIT_TAG == null
@@ -32,6 +33,22 @@ stages:
         - export GRADLE_USER_HOME=`pwd`/.gradle
         - mkdir -p $GRADLE_USER_HOME || true
         - cp .gitlab-ci/artifactory-access/init.gradle $GRADLE_USER_HOME
+
+
+test:
+    extends: .gradle_template
+    stage: test
+    script:
+        - ./gradlew test :app-properties-lib:printCoverage
+    coverage: '/Coverage: ([0-9.]+)%/'
+    artifacts:
+        when: always
+        paths:
+            - "**/build/reports/jacoco/test/html/"
+        reports:
+            coverage_report:
+                coverage_format: jacoco
+                path: "**/build/reports/jacoco/test/jacocoTestReport.xml"
 
 
 deploy:registry:gitlab:

@@ -1,5 +1,6 @@
 plugins {
     id("java-gradle-plugin")
+    jacoco
     id("maven-publish")
 }
 

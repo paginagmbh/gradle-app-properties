@@ -9,14 +9,45 @@ subprojects {
     plugins.withType<JavaPlugin> {
         extensions.configure<JavaPluginExtension> {
             toolchain {
-                languageVersion = JavaLanguageVersion.of(11)
+                languageVersion = JavaLanguageVersion.of(21)
             }
         }
         tasks.withType<JavaCompile>().configureEach {
             options.encoding = "UTF-8"
+            options.release = 11
         }
         tasks.withType<Javadoc>().configureEach {
             options.encoding = "UTF-8"
+        }
+    }
+
+    plugins.withId("jacoco") {
+        tasks.withType<Test>().configureEach {
+            finalizedBy(tasks.named("jacocoTestReport"))
+        }
+        tasks.withType<JacocoReport>().configureEach {
+            reports {
+                xml.required = true
+                html.required = true
+            }
+        }
+
+        // Prints instruction coverage to stdout so GitLab can parse it for the pipeline badge.
+        tasks.register("printCoverage") {
+            group = "verification"
+            description = "Prints instruction coverage % to stdout for CI badge parsing."
+            dependsOn("jacocoTestReport")
+            doLast {
+                val report = layout.buildDirectory
+                    .file("reports/jacoco/test/jacocoTestReport.xml").get().asFile
+                if (!report.exists()) return@doLast
+                val match = Regex("""type="INSTRUCTION" missed="(\d+)" covered="(\d+)"""")
+                    .findAll(report.readText()).lastOrNull() ?: return@doLast
+                val missed  = match.groupValues[1].toLong()
+                val covered = match.groupValues[2].toLong()
+                val total   = covered + missed
+                if (total > 0) println("Coverage: ${"%.1f".format(covered * 100.0 / total)}%")
+            }
         }
     }
 
