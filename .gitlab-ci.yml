@@ -18,10 +18,10 @@ cache:
 
 
 stages:
-    - prepare next development cycle
     - test
     - deploy
     - release
+    - prepare next development cycle
 
 
 .gradle_template:
@@ -90,6 +90,7 @@ git:release:
 git:preparesnapshot:
     extends: .gradle_template
     stage: prepare next development cycle
+    needs: []
     rules:
         -   if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
     script:
