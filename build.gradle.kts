@@ -1,5 +1,5 @@
 plugins {
-    id("gmbh.pagina.tools.gradle.release") version "1.3.0-SNAPSHOT"
+    id("gmbh.pagina.tools.gradle.release") version "1.3.0"
 }
 
 subprojects {
