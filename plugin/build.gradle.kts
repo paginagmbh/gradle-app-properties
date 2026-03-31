@@ -1,5 +1,6 @@
 plugins {
     id("java-gradle-plugin")
+    id("com.gradle.plugin-publish") version "1.3.0"
     jacoco
     id("maven-publish")
 }
