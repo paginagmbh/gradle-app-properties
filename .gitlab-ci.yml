@@ -21,7 +21,6 @@ stages:
     - test
     - deploy
     - release
-    - prepare next development cycle
 
 
 .gradle_template:
@@ -51,7 +50,7 @@ test:
                 path: "**/build/reports/jacoco/test/jacocoTestReport.xml"
 
 
-deploy:registry:gitlab:
+deploy:registry:artifactory:
     extends: .gradle_template
     stage: deploy
     rules:
@@ -76,6 +75,7 @@ git:release:
     rules:
         -   if: '$CI_COMMIT_BRANCH == "development"'
             when: manual
+    needs: [ ]
     script:
         # Create a new commit on the main branch
         - ./gradlew configureReleaseBot
@@ -89,10 +89,10 @@ git:release:
 
 git:preparesnapshot:
     extends: .gradle_template
-    stage: prepare next development cycle
-    needs: []
+    stage: release
     rules:
         -   if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    needs: [ ]
     script:
         # Only perform the branching when this is not a SNAPSHOT version on the main branch.
         - if [[ ($(./gradlew properties | grep version) =~ "SNAPSHOT") ]]; then exit 0; fi
