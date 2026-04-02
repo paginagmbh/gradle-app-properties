@@ -28,14 +28,14 @@ The plugin and the runtime utility are intentionally split into two artifacts so
 ```kotlin
 // build.gradle.kts
 plugins {
-    id("gmbh.pagina.tools.gradle.app-properties") version "1.2-SNAPSHOT"
+    id("gmbh.pagina.tools.gradle.app-properties") version "1.1.1-SNAPSHOT"
 }
 ```
 
 ```groovy
 // build.gradle
 plugins {
-    id 'gmbh.pagina.tools.gradle.app-properties' version '1.2-SNAPSHOT'
+    id 'gmbh.pagina.tools.gradle.app-properties' version '1.1.1-SNAPSHOT'
 }
 ```
 
@@ -47,13 +47,13 @@ The `app-properties-lib` jar is added to your `implementation` dependencies auto
 
 All parameters are optional.
 
-| Parameter          | Type      | Default          | Description                                                                                                                     |
-|:-------------------|:----------|:-----------------|:--------------------------------------------------------------------------------------------------------------------------------|
-| `displayName`      | `String`  | `project.name`   | Human-readable application name written as `name` in `meta.properties`                                                          |
-| `copyrightHolder`  | `String`  | `""` (omitted)   | Copyright holder, e.g. `"pagina GmbH, Tübingen"`. Empty string suppresses the copyright notice entirely                         |
-| `copyrightFromYear`| `Integer` | absent (omitted) | First year of the copyright range. When set and earlier than the build year, produces `"© 2020-2026 …"` instead of `"© 2026 …"` |
+| Parameter              | Type      | Default          | Description |
+|:-----------------------|:----------|:-----------------|:------------|
+| `displayName`          | `String`  | `project.name`   | Human-readable application name written as `name` in `meta.properties` |
+| `copyrightHolder`      | `String`  | `""` (omitted)   | Copyright holder, e.g. `"pagina GmbH, Tübingen"`. Empty string suppresses the copyright notice entirely |
+| `copyrightFromYear`    | `Integer` | absent (omitted) | First year of the copyright range. When set and earlier than the build year, produces `"© 2020–2026 …"` instead of `"© 2026 …"` |
 
-```kotlin 
+```kotlin
 appProperties {
     displayName       = "My Application"        // default: project.name
     copyrightHolder   = "pagina GmbH, Tübingen" // default: "" (omitted)
@@ -62,31 +62,53 @@ appProperties {
 ```
 
 
+### Build-time accessors
+
+The `appProperties` extension also exposes lazy `Provider<T>` accessors that can be wired directly
+into other plugins' properties at Gradle configuration time — no `.get()` call needed:
+
+| Method                              | Returns               | Value                                                           |
+|:------------------------------------|:----------------------|:----------------------------------------------------------------|
+| `getCopyrightString()`              | `Provider<String>`    | Copyright string **with** `©`, e.g. `"© 2020–2026 pagina GmbH"` |
+| `getCopyrightStringWithoutSymbol()` | `Provider<String>`    | Copyright string **without** `©`, e.g. `"2020–2026 pagina GmbH"`|
+| `getBuildDate()`                    | `Provider<LocalDate>` | Today's date, resolved lazily at task execution time            |
+
+```kotlin
+otherPlugin {
+    copyright = appProperties.getCopyrightString()             // "© 2020–2026 pagina GmbH, Tübingen"
+    label     = appProperties.getCopyrightStringWithoutSymbol() // "2020–2026 pagina GmbH, Tübingen"
+    date      = appProperties.getBuildDate()                   // LocalDate of the build
+}
+```
+
+All three methods delegate to [`CopyrightString`](#copyrightstring-utility) for formatting,
+ensuring the output always matches `AppProperties.copyrightString` at runtime.
+
+
 ## Runtime API
 
 `AppProperties` is a final utility class with the following `public static final` fields:
 
-| Field                | Type        | Content                                                                                                                                          |
-|:---------------------|:------------|:-------------------------------------------------------------------------------------------------------------------------------------------------|
-| `version`            | `String`    | `project.version` at build time                                                                                                                  |
-| `name`               | `String`    | Value of `displayName`                                                                                                                           |
-| `buildDate`          | `LocalDate` | Date of the build                                                                                                                                |
-| `copyrightHolder`    | `String`    | Value of `copyrightHolder`, or `""` if not set                                                                                                   |
-| `copyrightFromYear`  | `String`    | Value of `copyrightFromYear` as a string, or `""` if not set                                                                                     |
-| `copyrightString`    | `String`    | `"© <year> <holder>"` or `"© <fromYear>-<year> <holder>"` when `copyrightFromYear` is set and earlier than the build year; `""` if holder is empty |
-| `versionDescriptor`  | `String`    | `"<name> <version>, built <date>"`, with `copyrightString` appended when non-empty                                                               |
+| Field                          | Type        | Content                                                                                                   |
+|:-------------------------------|:------------|:----------------------------------------------------------------------------------------------------------|
+| `version`                      | `String`    | `project.version` at build time                                                                           |
+| `name`                         | `String`    | Value of `displayName`                                                                                    |
+| `buildDate`                    | `LocalDate` | Date of the build                                                                                         |
+| `copyrightHolder`              | `String`    | Value of `copyrightHolder`, or `""` if not set                                                            |
+| `copyrightFromYear`            | `String`    | Value of `copyrightFromYear` as a string, or `""` if not set                                              |
+| `copyrightString`              | `String`    | `"© 2020–2026 pagina GmbH, Tübingen"` — includes the © symbol; `""` if holder is empty                   |
+| `copyrightStringWithoutSymbol` | `String`    | `"2020–2026 pagina GmbH, Tübingen"` — same without the leading `©`; `""` if holder is empty              |
+| `versionDescriptor`            | `String`    | `"<name> <version>, built <date>"`, with `copyrightString` appended when non-empty                        |
 
 ```java
-// copyrightHolder set, no copyrightFromYear
 System.out.println(AppProperties.copyrightString);
-// © 2026 pagina GmbH, Tübingen
+// © 2020–2026 pagina GmbH, Tübingen
 
-// copyrightHolder set, copyrightFromYear = 2020
-System.out.println(AppProperties.copyrightString);
-// © 2020-2026 pagina GmbH, Tübingen
+System.out.println(AppProperties.copyrightStringWithoutSymbol);
+// 2020–2026 pagina GmbH, Tübingen
 
 System.out.println(AppProperties.versionDescriptor);
-// My Application 1.2.0, built 2026-03-31 © 2020-2026 pagina GmbH, Tübingen
+// My Application 1.2.0, built 2026-04-02 © 2020–2026 pagina GmbH, Tübingen
 
 System.out.println(AppProperties.buildDate.getYear());
 // 2026

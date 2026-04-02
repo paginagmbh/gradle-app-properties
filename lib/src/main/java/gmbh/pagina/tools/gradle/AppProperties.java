@@ -88,7 +88,7 @@ public final class AppProperties {
      *
      * <p>Returns an empty string when {@code copyrightFromYear} was not configured. When non-empty
      * and earlier than the build year, {@link #copyrightString} will contain a year range (e.g.
-     * {@code "© 2020-2026 …"}).
+     * {@code "© 2020–2026 …"}).
      *
      * <p>Example value: {@code "2020"} or {@code ""}.
      */
@@ -101,15 +101,32 @@ public final class AppProperties {
      *
      * <ul>
      *   <li>If {@link #copyrightFromYear} is set and earlier than the build year, a range is used:
-     *       {@code "© 2020-2026 pagina GmbH, Tübingen"}.
+     *       {@code "© 2020–2026 pagina GmbH, Tübingen"}.
      *   <li>Otherwise only the build year is shown: {@code "© 2026 pagina GmbH, Tübingen"}.
      *   <li>If {@link #copyrightHolder} is empty, this field is {@code ""}.
      * </ul>
+     *
+     * @see CopyrightString#of(String, int, int)
      */
-    public static final String copyrightString =
-            copyrightHolder.isEmpty()
-                    ? ""
-                    : "© " + buildCopyrightYearRange() + " " + copyrightHolder;
+    public static final String copyrightString = CopyrightString.of(
+            copyrightHolder,
+            copyrightFromYear.isEmpty() ? -1 : Integer.parseInt(copyrightFromYear),
+            buildDate.getYear());
+
+    /**
+     * The copyright notice without the {@code ©} symbol — same format as {@link #copyrightString}
+     * but the leading {@code "© "} is omitted.
+     *
+     * <p>Example value: {@code "2020–2026 pagina GmbH, Tübingen"}, or {@code ""} when
+     * {@link #copyrightHolder} is empty.
+     *
+     * @see CopyrightString#of(String, int, int, boolean)
+     */
+    public static final String copyrightStringWithoutSymbol = CopyrightString.of(
+            copyrightHolder,
+            copyrightFromYear.isEmpty() ? -1 : Integer.parseInt(copyrightFromYear),
+            buildDate.getYear(),
+            false);
 
     /**
      * A human-readable version descriptor combining the most important build metadata into a single
@@ -135,25 +152,4 @@ public final class AppProperties {
 
     // Private constructor — static utility class
     private AppProperties() {}
-
-    // ===============================================================================================
-    // Helpers
-    // ===============================================================================================
-
-    /**
-     * Builds the year (or year range) portion of the copyright string.
-     *
-     * <p>Returns {@code "<fromYear>-<buildYear>"} when {@link #copyrightFromYear} is non-empty and
-     * strictly less than the build year; otherwise returns {@code "<buildYear>"} as a plain string.
-     */
-    private static String buildCopyrightYearRange() {
-        int buildYear = buildDate.getYear();
-        if (!copyrightFromYear.isEmpty()) {
-            int fromYear = Integer.parseInt(copyrightFromYear);
-            if (fromYear < buildYear) {
-                return fromYear + "–" + buildYear;
-            }
-        }
-        return String.valueOf(buildYear);
-    }
 }

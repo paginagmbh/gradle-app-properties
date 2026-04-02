@@ -62,6 +62,11 @@ class AppPropertiesTest {
     }
 
     @Test
+    void copyrightStringWithoutSymbol_omitsSymbol() {
+        assertEquals("2018–2020 Test Holder GmbH", AppProperties.copyrightStringWithoutSymbol);
+    }
+
+    @Test
     void versionDescriptor_containsAllComponents() {
         assertEquals(
                 "Test Application 1.2.3-TEST, built 2020-06-15 © 2018–2020 Test Holder GmbH",

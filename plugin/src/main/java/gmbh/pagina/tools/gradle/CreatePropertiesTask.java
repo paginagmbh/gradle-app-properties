@@ -45,6 +45,7 @@ public abstract class CreatePropertiesTask extends DefaultTask {
     @Optional
     public abstract Property<Integer> getCopyrightFromYear();
 
+
     /** The output {@code meta.properties} file. */
     @OutputFile
     public abstract RegularFileProperty getOutputFile();
