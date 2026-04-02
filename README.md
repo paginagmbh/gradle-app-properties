@@ -28,14 +28,14 @@ The plugin and the runtime utility are intentionally split into two artifacts so
 ```kotlin
 // build.gradle.kts
 plugins {
-    id("gmbh.pagina.tools.gradle.app-properties") version "1.1.1-SNAPSHOT"
+    id("gmbh.pagina.tools.gradle.app-properties") version "1.1.1"
 }
 ```
 
 ```groovy
 // build.gradle
 plugins {
-    id 'gmbh.pagina.tools.gradle.app-properties' version '1.1.1-SNAPSHOT'
+    id 'gmbh.pagina.tools.gradle.app-properties' version '1.1.1'
 }
 ```
 

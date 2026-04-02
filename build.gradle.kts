@@ -4,7 +4,7 @@ plugins {
 
 subprojects {
     group = "gmbh.pagina.tools.gradle"
-    version = "1.1.1-SNAPSHOT"
+    version = "1.1.1"
 
     plugins.withType<JavaPlugin> {
         extensions.configure<JavaPluginExtension> {
