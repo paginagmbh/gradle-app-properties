@@ -10,6 +10,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDate;
 import java.util.Properties;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -167,5 +168,104 @@ class AppPropertiesPluginFunctionalTest {
 
         assertEquals(TaskOutcome.SUCCESS, result.task(":createProperties").getOutcome());
         assertEquals("After", loadMetaProperties().getProperty("name"));
+    }
+
+    // -----------------------------------------------------------------------
+    // getCopyrightString() / getCopyrightStringWithoutSymbol()
+    // -----------------------------------------------------------------------
+
+    /** Build snippet that registers a task printing the provider value to stdout. */
+    private static String printCopyrightTask(String providerCall) {
+        return "tasks.register(\"printCopyright\") {\n"
+                + "    val cs = appProperties." + providerCall + "\n"
+                + "    doLast { println(\"copyright=\" + cs.getOrElse(\"\")) }\n"
+                + "}\n";
+    }
+
+    @Test
+    void getCopyrightString_withHolderOnly_returnsCurrentYearWithSymbol() throws IOException {
+        int buildYear = LocalDate.now().getYear();
+        writeBuildFile(
+                APPLY_PLUGIN,
+                "version = \"1.0.0\"",
+                "appProperties {",
+                "    copyrightHolder = \"pagina GmbH, Tübingen\"",
+                "}",
+                printCopyrightTask("getCopyrightString()"));
+
+        var result = runner("printCopyright").build();
+
+        String expected = "© " + buildYear + " pagina GmbH, Tübingen";
+        assertTrue(result.getOutput().contains("copyright=" + expected),
+                "Expected output to contain 'copyright=" + expected + "' but was:\n" + result.getOutput());
+    }
+
+    @Test
+    void getCopyrightString_withHolderAndFromYear_returnsYearRangeWithSymbol() throws IOException {
+        int buildYear = LocalDate.now().getYear();
+        writeBuildFile(
+                APPLY_PLUGIN,
+                "version = \"1.0.0\"",
+                "appProperties {",
+                "    copyrightHolder   = \"pagina GmbH, Tübingen\"",
+                "    copyrightFromYear = 2020",
+                "}",
+                printCopyrightTask("getCopyrightString()"));
+
+        var result = runner("printCopyright").build();
+
+        String expected = "© 2020\u2013" + buildYear + " pagina GmbH, Tübingen";
+        assertTrue(result.getOutput().contains("copyright=" + expected),
+                "Expected output to contain 'copyright=" + expected + "' but was:\n" + result.getOutput());
+    }
+
+    @Test
+    void getCopyrightString_withNoHolder_returnsEmptyString() throws IOException {
+        writeBuildFile(
+                APPLY_PLUGIN,
+                "version = \"1.0.0\"",
+                printCopyrightTask("getCopyrightString()"));
+
+        var result = runner("printCopyright").build();
+
+        assertTrue(result.getOutput().contains("copyright=\n") || result.getOutput().contains("copyright=" + System.lineSeparator()),
+                "Expected empty copyright string but got:\n" + result.getOutput());
+    }
+
+    @Test
+    void getCopyrightStringWithoutSymbol_withHolderAndFromYear_returnsYearRangeWithoutSymbol() throws IOException {
+        int buildYear = LocalDate.now().getYear();
+        writeBuildFile(
+                APPLY_PLUGIN,
+                "version = \"1.0.0\"",
+                "appProperties {",
+                "    copyrightHolder   = \"pagina GmbH, Tübingen\"",
+                "    copyrightFromYear = 2020",
+                "}",
+                printCopyrightTask("getCopyrightStringWithoutSymbol()"));
+
+        var result = runner("printCopyright").build();
+
+        String expected = "2020\u2013" + buildYear + " pagina GmbH, Tübingen";
+        assertTrue(result.getOutput().contains("copyright=" + expected),
+                "Expected output to contain 'copyright=" + expected + "' but was:\n" + result.getOutput());
+    }
+
+    @Test
+    void getCopyrightStringWithoutSymbol_withHolderOnly_returnsCurrentYearWithoutSymbol() throws IOException {
+        int buildYear = LocalDate.now().getYear();
+        writeBuildFile(
+                APPLY_PLUGIN,
+                "version = \"1.0.0\"",
+                "appProperties {",
+                "    copyrightHolder = \"Acme Corp\"",
+                "}",
+                printCopyrightTask("getCopyrightStringWithoutSymbol()"));
+
+        var result = runner("printCopyright").build();
+
+        String expected = buildYear + " Acme Corp";
+        assertTrue(result.getOutput().contains("copyright=" + expected),
+                "Expected output to contain 'copyright=" + expected + "' but was:\n" + result.getOutput());
     }
 }
